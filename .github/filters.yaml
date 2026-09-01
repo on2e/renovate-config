@@ -1,0 +1,10 @@
+# NOTE:
+#  - Add new Renovate config files under the 'renovate' filter
+#  - Keep each 'renovate' filter rule glob-free
+renovate:
+  - added|modified:
+      - "default.json"
+      - "renovate.json"
+ci:
+  - ".github/filters.yaml"
+  - ".github/workflows/ci.yml"

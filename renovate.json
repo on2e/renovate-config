@@ -1,4 +1,4 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>on2e/renovate-config"]
+  "extends": ["github>on2e/renovate-config", "docker:pinDigests"]
 }

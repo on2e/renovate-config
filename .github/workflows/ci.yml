@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Detect file changes
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      renovate: ${{ steps.filter.outputs.renovate }}
+      renovate_changed_files: ${{ steps.filter.outputs.renovate_files }}
+      renovate_all_files: ${{ steps.renovate-all-files.outputs.renovate_all_files }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        id: filter
+        with:
+          filters: .github/filters.yaml
+          list-files: json
+
+      - name: Get all Renovate config files
+        id: renovate-all-files
+        run: |
+          renovate_all_files="$(yq -o=json -I=0 '[.renovate[]."added|modified"[]]' .github/filters.yaml)"
+          echo "renovate_all_files=${renovate_all_files}" >> "$GITHUB_OUTPUT"
+
+  validate-renovate-config:
+    name: Validate Renovate config
+    needs: changes
+    if: ${{ needs.changes.outputs.renovate == 'true' || needs.changes.outputs.ci == 'true' }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/renovatebot/renovate:44.56.0@sha256:18fc10ae34ecf8a1921dde6b149f905e51594a79d9b1dd2b567cd9fe15473a51
+      options: -u 1001:0 --group-add 999 --group-add 12021
+      env:
+        LOG_LEVEL: "debug"
+    strategy:
+      matrix:
+        # Validate all config files when the workflow changes, otherwise validate only the changed files
+        config-file: |-
+          ${{ case(
+            needs.changes.outputs.ci == 'true',
+            fromJSON(needs.changes.outputs.renovate_all_files),
+            fromJSON(needs.changes.outputs.renovate_changed_files)
+          ) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate Renovate config
+        run: |
+          renovate-config-validator --no-global ${{ matrix.config-file }}
