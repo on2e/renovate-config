@@ -67,3 +67,20 @@ jobs:
       - name: Validate Renovate config
         run: |
           renovate-config-validator --no-global ${{ matrix.config-file }}
+
+  verify-success:
+    name: Verify all Renovate config validations passed
+    needs: validate-renovate-config
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any validation failed
+        env:
+          RESULT: ${{ needs.validate-renovate-config.result }}
+        run: |
+          if [[ "${RESULT}" == 'success' || "${RESULT}" == 'skipped' ]]; then
+            echo 'Config validation passed'
+          else
+            echo 'Config validation failed'
+            exit 1
+          fi
