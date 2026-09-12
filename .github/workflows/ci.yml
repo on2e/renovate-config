@@ -44,7 +44,7 @@ jobs:
   validate-renovate-config:
     name: Validate Renovate config
     needs: changes
-    if: ${{ needs.changes.outputs.renovate == 'true' || needs.changes.outputs.ci == 'true' }}
+    if: needs.changes.outputs.renovate == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/renovatebot/renovate:44.82.3@sha256:d8fa5cceb1c68315c235559c981b5486db0165fd25e186a0cb6125f81578be87
@@ -71,14 +71,14 @@ jobs:
   verify-success:
     name: Verify all Renovate config validations passed
     needs: validate-renovate-config
-    if: ${{ always() && !cancelled() }}
+    if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any validation failed
         env:
           RESULT: ${{ needs.validate-renovate-config.result }}
         run: |
-          if [[ "${RESULT}" == 'success' || "${RESULT}" == 'skipped' ]]; then
+          if [[ "${RESULT}" =~ ^(success|skipped)$ ]]; then
             echo 'Config validation passed'
           else
             echo 'Config validation failed'
