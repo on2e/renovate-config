@@ -47,7 +47,7 @@ jobs:
     if: needs.changes.outputs.renovate == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/renovatebot/renovate:44.192.2@sha256:37960a62ba1faa9079a7c4eead9b3f4470748a64ecd207e06c09fd8858673e17
+      image: ghcr.io/renovatebot/renovate:44.193.1@sha256:8d6150cb6a0159df202a5d2105300d88158f2a059968229e65ae3bb37d227b3d
       options: -u 1001:0 --group-add 999 --group-add 12021
       env:
         LOG_LEVEL: "debug"
